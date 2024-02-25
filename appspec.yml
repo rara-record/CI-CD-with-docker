@@ -1,0 +1,19 @@
+version: 0.0
+os: linux
+files:
+    - source: /
+      destination: /home/ubuntu/app # S3에 업로드 된 zip 파일의 압축을 풀어 /home/ubuntu/app 으로 이동.
+      overwrite: yes
+
+permissions:
+    - object: /
+      pattern: "**"
+      owner: ubuntu
+      group: ubuntu
+      mode: 755
+
+hooks:
+    AfterInstall:
+        - location: scripts/deploy.sh
+          timeout: 60
+          runas: ubuntu
