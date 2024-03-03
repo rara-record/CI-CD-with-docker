@@ -39,7 +39,6 @@ jobs:
           echo "docker pull $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG" >> scripts/deploy.sh
           echo "docker kill ${{ env.REPOSITORY_NAME }}" >> scripts/deploy.sh
           echo "docker run -d -p 3000:3000 --rm --name ${{ env.REPOSITORY_NAME }} $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG" >> scripts/deploy.sh
-          chmod +x scripts/deploy.sh
 
       - name: Upload to s3
         env:
