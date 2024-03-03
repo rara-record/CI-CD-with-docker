@@ -1,0 +1,58 @@
+name: Deploy to AWS
+
+env:
+  REPOSITORY_NAME: cicd-with-docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: AWS configure
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker Build & Set Deploy script
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG
+          mkdir -p scripts
+          touch scripts/deploy.sh
+          echo "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ECR_REGISTRY" >> scripts/deploy.sh
+          echo "docker pull $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG" >> scripts/deploy.sh
+          echo "docker kill ${{ env.REPOSITORY_NAME }}" >> scripts/deploy.sh
+          echo "docker run -d -p 3000:3000 --rm --name ${{ env.REPOSITORY_NAME }} $ECR_REGISTRY/${{ env.REPOSITORY_NAME }}:$IMAGE_TAG" >> scripts/deploy.sh
+          chmod +x scripts/deploy.sh
+
+      - name: Upload to s3
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          zip -r deployment-$IMAGE_TAG.zip ./scripts appspec.yml
+          aws s3 cp --region ap-northeast-2 ./deployment-$IMAGE_TAG.zip s3://${{ env.REPOSITORY_NAME }}
+
+      - name: Start Deployment
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          aws deploy create-deployment --application-name ${{ env.REPOSITORY_NAME }} \
+          --deployment-config-name CodeDeployDefault.OneAtATime \
+          --deployment-group-name ${{ env.REPOSITORY_NAME }} \
+          --s3-location bucket=${{ env.REPOSITORY_NAME }},bundleType=zip,key=deployment-$IMAGE_TAG.zip
