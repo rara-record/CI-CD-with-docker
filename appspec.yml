@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
     - source: /
-      destination: /home/ubuntu/app # S3에 업로드 된 zip 파일의 압축을 풀어 /home/ubuntu/app 으로 이동.
+      destination: /home/ubuntu/app
       overwrite: yes
 
 permissions:
