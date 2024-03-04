@@ -1,4 +1,4 @@
-name: Deploy to AWS_
+name: Deploy to AWS
 
 env:
   REPOSITORY_NAME: cicd-with-docker
