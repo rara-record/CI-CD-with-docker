@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build-docker:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -52,6 +52,6 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           aws deploy create-deployment --application-name ${{ env.REPOSITORY_NAME }} \
-          --deployment-config-name CodeDeployDefault.AllAtOnce \
+          --deployment-config-name CodeDeployDefault.OneAtATime \
           --deployment-group-name ${{ env.REPOSITORY_NAME }} \
           --s3-location bucket=${{ env.REPOSITORY_NAME }},bundleType=zip,key=deployment-$IMAGE_TAG.zip
